@@ -3,10 +3,13 @@ setwd("C:/Users/User/OneDrive - The University of Manchester/GEOG71922/Assessmen
 
 #Install packages
 install.packages(c("terra","gdistance","raster","igraph"))
-install.packages(c("sf"))
+install.packages(c("sf", "Hmsc", "coda", "corrplot"))
 library(terra)
 library(raster)
 library(sf)
+library(Hmsc)
+library(coda)
+library(corrplot)
 #Read in the species data
 beetle<- read.csv("scot_beetle_community.csv")
 
@@ -21,11 +24,6 @@ class(beetle)
 names(env)
 #create crs object
 env.latlong<-data.frame(X=env$X, Y=env$Y)
-# Install necessary packages if they are not already installed
-install.packages(c("Hmsc", "coda", "corrplot"))
-library(Hmsc)
-library(coda)
-library(corrplot)
 #Use coordinates object to create our spatial points object
 beetle.sp<-vect(env.latlong, geom = c("X","Y"))
 #check that the points now have our desired crs. 
@@ -36,6 +34,17 @@ plot(UK)
 plot(beetle.sp, col="red", add=TRUE)
 
 #Transforming beetles data to the same CRS as the environment data
-beetleSF=st_as_sf(beetle.sp,coords=c("x","y"),crs="EPSG:27700")
+beetleSF=st_as_sf(beetle.sp)
 #Extracting the environment data to the points data
-
+envData=terra::extract(UK,beetleSF)
+crdsbeetleSF=st_coordinates(beetleSF)
+#Get cell number at different locations
+cn=cellFromXY(UK, crdsbeetleSF)
+library(dplyr)
+library(tidyr)
+#merge data by the "cn" column.
+allData<-cbind(beetle, env)
+head(allData)
+names(allData)
+#keep only unqiue coordinates
+allData=distinct(bradypus,geometry, .keep_all = TRUE)
