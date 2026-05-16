@@ -34,6 +34,6 @@ crs(beetle.sp)<-"epsg:27700"
 #check all plot together - but first project the env data to epsg:4326
 beetle.sp<-project(beetle.sp,crs(UK))
 plot(UK)
-plot(beetle.sp, col="red", pch=16, cex=1.5)
-studyExtent<-c("X", "Y")
-C<-crop(beetle.sp, studyExtent)
+plot(beetle.sp, col="red", add=TRUE)
+names(env)
+plot(env)
