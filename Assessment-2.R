@@ -10,6 +10,7 @@ library(sf)
 library(Hmsc)
 library(coda)
 library(corrplot)
+
 #Read in the species data
 beetle<- read.csv("scot_beetle_community.csv")
 
@@ -38,13 +39,43 @@ beetleSF=st_as_sf(beetle.sp)
 #Extracting the environment data to the points data
 envData=terra::extract(UK,beetleSF)
 crdsbeetleSF=st_coordinates(beetleSF)
-#Get cell number at different locations
-cn=cellFromXY(UK, crdsbeetleSF)
 library(dplyr)
 library(tidyr)
-#merge data by the "cn" column.
+#merge species and environmental data.
 allData<-cbind(beetle, env)
 head(allData)
 names(allData)
-#keep only unqiue coordinates
-allData=distinct(bradypus,geometry, .keep_all = TRUE)
+
+#Remove duplicate columns
+allData = allData[, !duplicated(names(allData))]
+ncol(allData)
+names(allData)
+
+# Prepare species data matrix - only need columns 3 to 24
+Y <- data.frame(allData[, c("sp1", "sp2", "sp3", "sp4", "sp5", "sp6",
+                                      "sp7", "sp8", "sp9", "sp10", "sp11", "sp12", 
+                                      "sp13", "sp14", "sp15", "sp16", "sp17", "sp18", 
+                                      "sp19", "sp20", "sp21", "sp22")])
+X <- data.frame(allData[, c("Org", "pH", "AvailP", "AvailK", "Moist", "Litter", 
+                                      "Bryophyte", "Plants_m2", "CanopyHeight", "Stem.density", 
+                                      "Biom0_5", "Repro.biom", "Elevation", "Management")])
+
+#convert to data frames and ensure all columns are numeric
+Y=data.frame(apply(Y,MARGIN=2,FUN=as.numeric))
+
+#convert env data
+X=data.frame(apply(X,MARGIN=2,FUN=as.numeric))
+nrow(Y)==nrow(X)
+nrow(Y)
+nrow(X)
+#Assigning site number to address sampling bias
+Sites=as.factor(allData$Sites)
+#this needs to be set up as a data frame - as the Hmsc( ) function only accepts data frames (not matrices)
+studyDesign <- data.frame(sample = Sites)
+#use the HmscRandomLevel() function to store the random level
+rL <- HmscRandomLevel(units = studyDesign$sample)
+#Write model formula
+XFormula = ~ pH + Moist + CanopyHeight + Bryophyte + AvailK + AvailP + Stem.density
+#Construct the model
+m <- Hmsc(Y = Y, XData = X, XFormula = XFormula, distr = "probit",
+          studyDesign = studyDesign,ranLevels = list(sample = rL))
