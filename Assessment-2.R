@@ -4,6 +4,7 @@ setwd("C:/Users/s16188ss/OneDrive - The University of Manchester/GEOG71922/Asses
 #Install packages
 install.packages(c("terra","gdistance","raster","igraph"))
 install.packages(c("sf", "Hmsc", "coda", "corrplot"))
+install.packages("ggplot2")
 library(terra)
 library(raster)
 library(sf)
@@ -12,6 +13,7 @@ library(coda)
 library(corrplot)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 
 #Read in the species data
 beetle<- read.csv("scot_beetle_community.csv")
@@ -19,36 +21,41 @@ beetle<- read.csv("scot_beetle_community.csv")
 #view the first six rows of the data
 head(beetle) 
 
+#Check the class of the species data
+class(beetle)
+
 #Load land cover for the analysis
 UK=rast("LCMUK_2000.tif")
 env<-read.csv("scot_beetle_env.csv")
 head(env)
-class(beetle)
 names(env)
 class(env)
-#create crs object
+
+#create CRS object
 env.latlong<-data.frame(X=env$X, Y=env$Y)
+
 #Use coordinates object to create our spatial points object
 beetle.sp<-vect(env.latlong, geom = c("X","Y"))
-#check that the points now have our desired crs. 
+
+#check that the points now have our desired CRS. 
 crs(beetle.sp)<-"epsg:27700"
-#check all plot together - but first project the env data to epsg:4326
+
+#check all plot together - but first project the species points on the UK landcover map 
 beetle.sp<-project(beetle.sp,crs(UK))
 plot(UK)
 plot(beetle.sp, col="red", add=TRUE)
 
 #Transforming beetles data to the same CRS as the environment data
 beetleSF=st_as_sf(beetle.sp)
-#Extracting the environment data to the points data
-envData=terra::extract(UK,beetleSF)
-crdsbeetleSF=st_coordinates(beetleSF)
-#merge species and environmental data.
+
+#Merge species and environmental data.
 allData<-cbind(beetle, env)
 head(allData)
 names(allData)
 
 #Remove duplicate columns
 allData = allData[, !duplicated(names(allData))]
+#Check number of columns and names of allData
 ncol(allData)
 names(allData)
 
@@ -73,7 +80,7 @@ ncol(X)
 names(X)
 #Assigning site number to address sampling bias
 Sites=as.factor(allData$Sites)
-#this needs to be set up as a data frame - as the Hmsc( ) function only accepts data frames (not matrices)
+#Setting up as a dataframe as HMSC function only accepts dataframe
 studyDesign <- data.frame(sample = Sites)
 #use the HmscRandomLevel() function to store the random level
 rL <- HmscRandomLevel(units = studyDesign$sample)
@@ -88,7 +95,7 @@ nIter <- 2000
 nBurn <- 2000
 
 set.seed(11)
-# Fit the model
+#Fit the model
 fit <- sampleMcmc(
   m,
   samples = nIter,
@@ -96,22 +103,25 @@ fit <- sampleMcmc(
   nChains = nChains
 )
 dev.off()
-# Check MCMC convergence
+#Check MCMC convergence
 mcmc_chains <- convertToCodaObject(fit)
 
-par(mfrow = c(4, 4)) #adjust plotting scheme
-par(mar = c(2, 2, 2, 2))  # Adjust margin sizes (bottom, left, top, right)
-plot(mcmc_chains$Beta)#plot
+#adjust plotting scheme
+par(mfrow = c(4, 4)) 
+#Adjust margin sizes (bottom, left, top, right)
+par(mar = c(2, 2, 2, 2))  
+#Plot
+plot(mcmc_chains$Beta)
 
 #Extract the posterior estimates of the beta parameters (model coefficients)
 postBeta <- getPostEstimate(fit, "Beta")
 
-# Adjust margin sizes
+#Adjust margin sizes
 par(mar = c(3, 3, 0.5, 0.5))  
 
 #Plot the response of species to env covariates
 plotBeta(fit, postBeta, param = "Mean")
-#Extract the potential scale reduction factor as a model diagnostic (should ideally be close to one for most runs)
+#Extract the potential scale reduction factor as a model diagnostic
 mpost = convertToCodaObject(fit)
 
 psrf.omega = gelman.diag(mpost$Omega[[1]], multivariate =
@@ -122,11 +132,11 @@ hist(psrf.omega)
 #Compute associations using the fitted model
 OmegaCor <- computeAssociations(fit)
 
-# Extract the first set of associations from OmegaCor - mean between-species associations
+#Extract the first set of associations from OmegaCor - mean between-species associations
 toPlot <- OmegaCor[[1]]$mean
-# Open a new plot window
+#Open a new plot window
 dev.off()
-# Plot the correlation matrix (interspecific interactions) using corrplot 
+#Plot the correlation matrix (inter specific interactions) using corrplot 
 corrplot(toPlot,
          method = "color",
          col = colorRampPalette(c("blue", "white", "red"))(20),
@@ -143,50 +153,14 @@ predY = predict(fit, Gradient=Gradient, expected = TRUE)
 
 #plot
 plotGradient(fit, Gradient, pred=predY, measure="S", index = 1, showData = FALSE)
-# environmental predictors from the env layer 
 
-#Set NAs to zero 
-env[is.na(env)]<-0
-
-#get coordinates of all raster cells
-env_grid = read.csv("scot_beetle_env.csv")
-
-#transform all raster covariates to a matrix of values
-xy.grid = data.frame(x=env_grid$X, y=env_grid$Y)
-
-#Extratcing variables only in the formula
-XData.grid<- data.frame(
-  Org = as.numeric(env_grid$Org),
-  pH = as.numeric(env_grid$pH),
-  Moist = as.numeric(env_grid$Moist),
-  Plants_m2 = as.numeric(env_grid$Plants_m2),
-  Biom0_5 = as.numeric(env_grid$Biom0_5),
-  Elevation = as.numeric(env_grid$Elevation),
-  Management = as.numeric(env_grid$Management)
-)
-nrow(XData.grid)==nrow(xy.grid)
-
-# We next use the prepareGradient function to convert the environmental and spatial
-# predictors into a format that can be used as input for the predict function
 
 Gradient = prepareGradient(fit, XDataNew = XData.grid,sDataNew = xy.grid)
 
-
-
-# We are now ready to compute the predicted distribution (takes a minute so please be patient)
-
-# Note that we used expected = TRUE to predict occurrence probabilities (e.g. 0.2) instead of occurrences (0 or 1) 
 predY = predict(fit, Gradient=Gradient,expected=TRUE)
 
 
 EpredY=Reduce("+",predY)/length(predY)
-
-
-# EpredY is a matrix of posterior mean occurrence probabilities
-# The next step is to post-process the predictions to those community features
-# that we wish to illustrate over the prediction space. With the script below,
-# we derive from the predictions for species richness
-
 
 SpeciesRichness=rowSums(EpredY)
 
