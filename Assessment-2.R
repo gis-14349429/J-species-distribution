@@ -172,10 +172,6 @@ H = EpredY[,1]
 
 mapData=data.frame(xy,SpeciesRichness,H)
 
-
-# We will use the ggplot function from the ggplot2 package, 
-library(ggplot2)
-
 # We can plot variation in species richness.
 
 ggplot(data = mapData, aes(x=x, y=y, color=SpeciesRichness))+geom_point(size=3)  + scale_color_gradient(low="blue",high="green") + coord_equal()
