@@ -1,5 +1,5 @@
 #Set working directory
-setwd("C:/Users/User/OneDrive - The University of Manchester/GEOG71922/Assessment-2/14349429_A2")
+setwd("C:/Users/s16188ss/OneDrive - The University of Manchester/GEOG71922/Assessment-2/14349429_A2")
 
 #Install packages
 install.packages(c("terra","gdistance","raster","igraph"))
@@ -10,6 +10,8 @@ library(sf)
 library(Hmsc)
 library(coda)
 library(corrplot)
+library(dplyr)
+library(tidyr)
 
 #Read in the species data
 beetle<- read.csv("scot_beetle_community.csv")
@@ -39,8 +41,6 @@ beetleSF=st_as_sf(beetle.sp)
 #Extracting the environment data to the points data
 envData=terra::extract(UK,beetleSF)
 crdsbeetleSF=st_coordinates(beetleSF)
-library(dplyr)
-library(tidyr)
 #merge species and environmental data.
 allData<-cbind(beetle, env)
 head(allData)
@@ -68,6 +68,8 @@ X=data.frame(apply(X,MARGIN=2,FUN=as.numeric))
 nrow(Y)==nrow(X)
 nrow(Y)
 nrow(X)
+ncol(X)
+names(X)
 #Assigning site number to address sampling bias
 Sites=as.factor(allData$Sites)
 #this needs to be set up as a data frame - as the Hmsc( ) function only accepts data frames (not matrices)
@@ -79,3 +81,39 @@ XFormula = ~ pH + Moist + CanopyHeight + Bryophyte + AvailK + AvailP + Stem.dens
 #Construct the model
 m <- Hmsc(Y = Y, XData = X, XFormula = XFormula, distr = "probit",
           studyDesign = studyDesign,ranLevels = list(sample = rL))
+# Set MCMC parameters
+nChains <- 2
+nIter <- 1000
+nBurn <- 1000
+
+set.seed(11)
+# Fit the model
+fit <- sampleMcmc(
+  m,
+  samples = nIter,
+  transient = nBurn,
+  nChains = nChains
+)
+# Check MCMC convergence
+mcmc_chains <- convertToCodaObject(fit)
+
+par(mfrow = c(4, 4)) #adjust plotting scheme
+par(mar = c(2, 2, 2, 2))  # Adjust margin sizes (bottom, left, top, right)
+plot(mcmc_chains$Beta)#plot
+
+#Extract the posterior estimates of the beta parameters (model coefficients)
+postBeta <- getPostEstimate(fit, "Beta")
+
+# Adjust margin sizes
+par(mar = c(3, 3, 0.5, 0.5))  
+
+#Plot the response of species to env covariates
+plotBeta(fit, postBeta, param = "Mean")
+#Extract the potential scale reduction factor as a model diagnostic (should ideally be close to one for most runs)
+mpost = convertToCodaObject(fit)
+
+psrf.omega = gelman.diag(mpost$Omega[[1]], multivariate =
+                           FALSE)$psrf
+
+#plot values
+hist(psrf.omega)
