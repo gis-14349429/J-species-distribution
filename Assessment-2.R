@@ -1,10 +1,9 @@
 #Set working directory
-setwd("C:/Users/s16188ss/OneDrive - The University of Manchester/GEOG71922/Assessment-2/14349429_A2")
+setwd("../../Assessment-2/14349429_A2")
 
 #Install packages
 install.packages(c("terra","gdistance","raster","igraph"))
-install.packages(c("sf", "Hmsc", "coda", "corrplot"))
-install.packages("ggplot2")
+install.packages(c("sf", "Hmsc", "coda", "corrplot", "ggplot2"))
 library(terra)
 library(raster)
 library(sf)
@@ -154,6 +153,16 @@ predY = predict(fit, Gradient=Gradient, expected = TRUE)
 #plot
 plotGradient(fit, Gradient, pred=predY, measure="S", index = 1, showData = FALSE)
 
+#Create gradient for spatial prediction
+xy.grid = data.frame(x=env$X, y=env$Y)
+#Envrironmental data grid
+XData.grid=data.frame(apply(X, MARGIN=2, FUN=as.numeric))
+nrow(X)==nrow(xy.grid)
+
+#Compute AUC for model validation
+preds=computePredictedValues(fit)
+modelEval=evaluateModelFit(hM=fit, predY=preds)
+cat("Mean AUC:", round(mean(modelEval$AUC, na.rm=TRUE), 3), "\n")
 
 Gradient = prepareGradient(fit, XDataNew = XData.grid,sDataNew = xy.grid)
 
