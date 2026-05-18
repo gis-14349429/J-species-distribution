@@ -25,6 +25,7 @@ class(beetle)
 
 #Load land cover for the analysis
 UK=rast("LCMUK_2000.tif")
+class(UK)
 env<-read.csv("scot_beetle_env.csv")
 head(env)
 names(env)
@@ -164,7 +165,7 @@ preds=computePredictedValues(fit)
 modelEval=evaluateModelFit(hM=fit, predY=preds)
 cat("Mean AUC:", round(mean(modelEval$AUC, na.rm=TRUE), 3), "\n")
 
-Gradient = prepareGradient(fit, XDataNew = XData.grid,sDataNew = xy.grid)
+Gradient = prepareGradient(fit, XDataNew = XData.grid1,sDataNew = xy.grid1)
 
 predY = predict(fit, Gradient=Gradient,expected=TRUE)
 
