@@ -2,7 +2,7 @@
 setwd("../../Assessment-2/14349429_A2")
 
 #Install packages
-install.packages(c("terra","gdistance","raster","igraph"))
+install.packages(c("terra","gdistance","raster","igraph","dplyr","tidyr"))
 install.packages(c("sf", "Hmsc", "coda", "corrplot", "ggplot2"))
 library(terra)
 library(raster)
@@ -19,6 +19,7 @@ beetle<- read.csv("scot_beetle_community.csv")
 
 #Load land cover for the analysis
 UK=rast("LCMUK_2000.tif")
+crs(UK)
 #Load environment data 
 env<-read.csv("scot_beetle_env.csv")
 
@@ -72,7 +73,7 @@ XFormula = ~ pH + Moist + Plants_m2 + Biom0_5 + Org + Elevation + Management
 m <- Hmsc(Y = Y, XData = X, XFormula = XFormula, distr = "probit",
           studyDesign = studyDesign,ranLevels = list(sample = rL))
 # Set MCMC parameters
-nChains <- 2
+nChains <- 3
 nIter <- 1000
 nBurn <- 1000
 
@@ -151,7 +152,6 @@ Gradient = prepareGradient(fit, XDataNew = XData.grid,sDataNew = xy.grid)
 
 predY = predict(fit, Gradient=Gradient,expected=TRUE)
 
-
 EpredY=Reduce("+",predY)/length(predY)
 
 SpeciesRichness=rowSums(EpredY)
@@ -167,3 +167,4 @@ mapData=data.frame(xy,SpeciesRichness,H)
 # We can plot variation in species richness.
 
 ggplot(data = mapData, aes(x=x, y=y, color=SpeciesRichness))+geom_point(size=3)  + scale_color_gradient(low="blue",high="green") + coord_equal()
+
