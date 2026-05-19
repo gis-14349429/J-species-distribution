@@ -17,12 +17,6 @@ library(ggplot2)
 #Read in the species data
 beetle<- read.csv("scot_beetle_community.csv")
 
-#view the first six rows of the data
-head(beetle) 
-
-#Check the class of the species data
-class(beetle)
-
 #Load land cover for the analysis
 UK=rast("LCMUK_2000.tif")
 #Load environment data 
@@ -47,14 +41,9 @@ beetleSF=st_as_sf(beetle.sp)
 
 #Merge species and environmental data.
 allData<-cbind(beetle, env)
-head(allData)
-names(allData)
 
 #Remove duplicate columns
 allData = allData[, !duplicated(names(allData))]
-#Check number of columns and names of allData
-ncol(allData)
-names(allData)
 
 # Prepare species data matrix - only need columns 3 to 24
 Y <- data.frame(allData[, c("sp1", "sp2", "sp3", "sp4", "sp5", "sp6",
@@ -70,11 +59,7 @@ Y=data.frame(apply(Y,MARGIN=2,FUN=as.numeric))
 
 #convert env data
 X=data.frame(apply(X,MARGIN=2,FUN=as.numeric))
-nrow(Y)==nrow(X)
-nrow(Y)
-nrow(X)
-ncol(X)
-names(X)
+
 #Assigning site number to address sampling bias
 Sites=as.factor(allData$Sites)
 #Setting up as a dataframe as HMSC function only accepts dataframe
@@ -182,4 +167,3 @@ mapData=data.frame(xy,SpeciesRichness,H)
 # We can plot variation in species richness.
 
 ggplot(data = mapData, aes(x=x, y=y, color=SpeciesRichness))+geom_point(size=3)  + scale_color_gradient(low="blue",high="green") + coord_equal()
-colnames(XData.grid)
