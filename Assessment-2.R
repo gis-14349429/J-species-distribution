@@ -25,11 +25,8 @@ class(beetle)
 
 #Load land cover for the analysis
 UK=rast("LCMUK_2000.tif")
-class(UK)
+#Load environment data 
 env<-read.csv("scot_beetle_env.csv")
-head(env)
-names(env)
-class(env)
 
 #create CRS object
 env.latlong<-data.frame(X=env$X, Y=env$Y)
@@ -90,11 +87,11 @@ XFormula = ~ pH + Moist + Plants_m2 + Biom0_5 + Org + Elevation + Management
 m <- Hmsc(Y = Y, XData = X, XFormula = XFormula, distr = "probit",
           studyDesign = studyDesign,ranLevels = list(sample = rL))
 # Set MCMC parameters
-nChains <- 3
-nIter <- 2000
-nBurn <- 2000
+nChains <- 2
+nIter <- 1000
+nBurn <- 1000
 
-set.seed(11)
+set.seed(20)
 #Fit the model
 fit <- sampleMcmc(
   m,
@@ -143,8 +140,8 @@ corrplot(toPlot,
          title = NULL,
          type = "lower",
          tl.col = "black",
-         tl.cex = 0.5,  # Adjust text label size
-         mar = c(0, 0, 6, 0))  # Adjust margins
+         tl.cex = 0.8,  # Adjust text label size
+         mar = c(0, 0, 0, 0))  # Adjust margins
 #compute gradient
 Gradient = constructGradient(fit,focalVariable = "pH")
 
@@ -165,7 +162,7 @@ preds=computePredictedValues(fit)
 modelEval=evaluateModelFit(hM=fit, predY=preds)
 cat("Mean AUC:", round(mean(modelEval$AUC, na.rm=TRUE), 3), "\n")
 
-Gradient = prepareGradient(fit, XDataNew = XData.grid1,sDataNew = xy.grid1)
+Gradient = prepareGradient(fit, XDataNew = XData.grid,sDataNew = xy.grid)
 
 predY = predict(fit, Gradient=Gradient,expected=TRUE)
 
