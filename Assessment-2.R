@@ -126,7 +126,7 @@ corrplot(toPlot,
          title = NULL,
          type = "lower",
          tl.col = "black",
-         tl.cex = 0.8,  # Adjust text label size
+         tl.cex = 0.6,  # Adjust text label size
          mar = c(0, 0, 0, 0))  # Adjust margins
 #compute gradient
 Gradient = constructGradient(fit,focalVariable = "pH")
