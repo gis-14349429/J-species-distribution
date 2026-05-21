@@ -148,8 +148,9 @@ preds=computePredictedValues(fit)
 modelEval=evaluateModelFit(hM=fit, predY=preds)
 cat("Mean AUC:", round(mean(modelEval$AUC, na.rm=TRUE), 3), "\n")
 
+#Compute gradient 
 Gradient = prepareGradient(fit, XDataNew = XData.grid,sDataNew = xy.grid)
-
+#Make prediction
 predY = predict(fit, Gradient=Gradient,expected=TRUE)
 
 EpredY=Reduce("+",predY)/length(predY)
@@ -164,7 +165,7 @@ H = EpredY[,1]
 
 mapData=data.frame(xy,SpeciesRichness,H)
 
-# We can plot variation in species richness.
+#plot variation in species richness.
 
 ggplot(data = mapData, aes(x=x, y=y, color=SpeciesRichness))+geom_point(size=3)  + scale_color_gradient(low="blue",high="green") + coord_equal()
 
