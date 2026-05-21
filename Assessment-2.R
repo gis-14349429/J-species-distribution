@@ -19,7 +19,7 @@ beetle<- read.csv("scot_beetle_community.csv")
 
 #Load land cover for the analysis
 UK=rast("LCMUK_2000.tif")
-crs(UK)
+
 #Load environment data 
 env<-read.csv("scot_beetle_env.csv")
 
